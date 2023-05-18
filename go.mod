@@ -3,6 +3,7 @@ module github.com/koushamad/heraclitus
 go 1.20
 
 require (
+	github.com/gorilla/websocket v1.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 )

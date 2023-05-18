@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/koushamad/heraclitus/app/agent/cmd"
 
 func main() {
-	fmt.Println("Hello, World!")
+	cmd.Execute()
 }

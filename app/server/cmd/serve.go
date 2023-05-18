@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"github.com/koushamad/heraclitus/app/server/service"
 	"github.com/koushamad/heraclitus/pkg/application"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +13,7 @@ var serveCmd = &cobra.Command{
 	Short: "listen to ttp requests",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("serve called", port)
+		service.Listen(port)
 	},
 }
 
