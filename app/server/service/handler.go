@@ -9,6 +9,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -23,6 +25,11 @@ var (
 	mu    sync.Mutex
 	conns []*websocket.Conn
 )
+
+// Define the mapping from domain names to IP addresses and ports.
+var domainToIPPort = map[string]string{
+	"test.com": "http://127.0.0.1:3000",
+}
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -42,6 +49,7 @@ func handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	if len(conns) == 0 {
 		http.Error(w, "No WebSocket clients connected", http.StatusInternalServerError)
+		log.Println("No WebSocket clients connected")
 		mu.Unlock()
 		return
 	}
@@ -51,21 +59,38 @@ func handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
 	conn := conns[rand.Intn(len(conns))]
 	mu.Unlock()
 
+	// Redirect the request to the corresponding IP and port.
+	host := strings.Split(r.Host, ":")[0] // Get the domain name.
+	if ipPort, ok := domainToIPPort[host]; ok {
+		u, err := url.Parse(ipPort + r.URL.Path)
+
+		if err != nil {
+			http.Error(w, "Error redirecting request", http.StatusInternalServerError)
+			log.Println("Error parsing URL:", err)
+			return
+		}
+
+		r.URL = u
+	}
+
 	dump, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		http.Error(w, "Error dumping request", http.StatusInternalServerError)
+		log.Println("Error dumping request:", err)
 		return
 	}
 
 	err = conn.WriteMessage(websocket.TextMessage, dump)
 	if err != nil {
 		http.Error(w, "Error writing to WebSocket client", http.StatusInternalServerError)
+		log.Println("Error writing to WebSocket client:", err)
 		return
 	}
 
 	_, response, err := conn.ReadMessage()
 	if err != nil {
 		http.Error(w, "Error reading response from WebSocket client", http.StatusInternalServerError)
+		log.Println("Error reading response from WebSocket client:", err)
 		return
 	}
 
@@ -73,6 +98,7 @@ func handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.ReadResponse(respReader, r)
 	if err != nil {
 		http.Error(w, "Error reading HTTP response", http.StatusInternalServerError)
+		log.Println("Error reading HTTP response:", err)
 		return
 	}
 
@@ -80,6 +106,7 @@ func handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
 	resp.Body.Close()
 	if err != nil {
 		http.Error(w, "Error reading response body", http.StatusInternalServerError)
+		log.Println("Error reading response body:", err)
 		return
 	}
 

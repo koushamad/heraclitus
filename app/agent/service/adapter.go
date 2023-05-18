@@ -41,6 +41,7 @@ func ConnectToWebSocket(host string, port int) {
 			continue
 		}
 
+		log.Println(req.Method, req.URL)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Println("Do:", err)
